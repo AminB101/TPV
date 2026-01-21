@@ -1,4 +1,9 @@
-import google.generativeai as genai
+try:
+    import google.generativeai as genai
+    HAS_GENAI = True
+except ImportError:
+    HAS_GENAI = False
+
 import os
 import json
 import PIL.Image
@@ -8,7 +13,7 @@ import io
 # Intentar configurar API Key desde entorno
 API_KEY = os.environ.get("GEMINI_API_KEY")
 
-if API_KEY:
+if API_KEY and HAS_GENAI:
     try:
         genai.configure(api_key=API_KEY)
     except:
@@ -17,10 +22,11 @@ if API_KEY:
 def configure_api_key(key):
     global API_KEY
     API_KEY = key
-    try:
-        genai.configure(api_key=key)
-    except:
-        pass
+    if HAS_GENAI:
+        try:
+            genai.configure(api_key=key)
+        except:
+            pass
 
 def procesar_albaran(file_path):
     ext = file_path.rsplit('.', 1)[1].lower()
@@ -93,6 +99,12 @@ def procesar_csv(file_path):
         return {"success": False, "error": f"Error procesando CSV: {str(e)}"}
 
 def procesar_imagen_gemini(image_path):
+    if not HAS_GENAI:
+        return {
+            "success": False, 
+            "error": "La librería de IA no está instalada (google-generativeai)."
+        }
+
     if not API_KEY:
         return {
             "success": False, 

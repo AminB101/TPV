@@ -7,3 +7,4 @@ numpy
 pywebview
 pyinstaller
 python-dotenv
+google-generativeai
