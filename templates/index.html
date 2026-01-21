@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus ERP - Gestión Inteligente</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="ph-fill ph-brain"></i>
+                <div>
+                    <h1>Nexus</h1>
+                    <span class="badge">ERP beta</span>
+                </div>
+            </div>
+
+            <nav class="side-nav">
+                <button class="nav-btn active" onclick="showView('dashboard')">
+                    <i class="ph ph-squares-four"></i> Dashboard
+                </button>
+                <button class="nav-btn highlight-btn" onclick="showView('pos')">
+                    <i class="ph ph-shopping-cart"></i> TPV / Caja
+                </button>
+                <button class="nav-btn" onclick="showView('inventory')">
+                    <i class="ph ph-package"></i> Inventario
+                </button>
+                <button class="nav-btn" onclick="showView('sales')">
+                    <i class="ph ph-receipt"></i> Historial Ventas
+                </button>
+                <button class="nav-btn" onclick="showView('expenses')">
+                    <i class="ph ph-wallet"></i> Gastos
+                </button>
+                <button class="nav-btn" onclick="showView('upload')">
+                    <i class="ph ph-file-cloud"></i> Importar (IA)
+                </button>
+            </nav>
+
+            <div class="bottom-settings">
+                <button class="nav-btn" onclick="promptApiKey()">
+                    <i class="ph ph-gear"></i> Configuración
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content-area">
+
+            <!-- VISTA: DASHBOARD -->
+            <section id="view-dashboard" class="view-section">
+                <header class="section-header">
+                    <h2>Resumen de hoy</h2>
+                    <span id="current-date" class="date-badge">...</span>
+                </header>
+
+                <!-- Tarjetas KPI -->
+                <div class="kpi-grid">
+                    <div class="kpi-card income">
+                        <div class="icon"><i class="ph ph-trend-up"></i></div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">Ventas Hoy</span>
+                            <h3 id="dash-sales">0.00 €</h3>
+                        </div>
+                    </div>
+                    <div class="kpi-card expense">
+                        <div class="icon"><i class="ph ph-trend-down"></i></div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">Gastos Hoy</span>
+                            <h3 id="dash-expenses">0.00 €</h3>
+                        </div>
+                    </div>
+                    <div class="kpi-card profit">
+                        <div class="icon"><i class="ph ph-wallet"></i></div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">Beneficio Neto</span>
+                            <h3 id="dash-profit">0.00 €</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-split"
+                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px;">
+                    <!-- Más Vendidos -->
+                    <div class="card panel">
+                        <div class="panel-header">
+                            <h3><i class="ph ph-star"></i> Más Vendidos</h3>
+                        </div>
+                        <div id="top-products-list" style="display:flex; flex-direction:column; gap:10px;">
+                            <!-- JS -->
+                        </div>
+                    </div>
+
+                    <!-- Resumen Inventario -->
+                    <div class="card panel">
+                        <div class="panel-header">
+                            <h3><i class="ph ph-briefcase"></i> Valor Inventario</h3>
+                        </div>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; text-align:center;">
+                            <div>
+                                <span class="kpi-label">PVP Total</span>
+                                <h4 id="inv-val-venta">0.00 €</h4>
+                            </div>
+                            <div>
+                                <span class="kpi-label">Artículos</span>
+                                <h4 id="inv-total-items">0</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VISTA: TPV -->
+            <section id="view-pos" class="view-section hidden">
+                <div class="pos-layout">
+                    <div class="pos-left">
+                        <div class="card scanner-box">
+                            <i class="ph ph-barcode"></i>
+                            <input type="text" id="pos-scanner" placeholder="Escanear producto..." autofocus>
+                        </div>
+                        <div class="quick-catalog">
+                            <h3>Catálogo Rápido</h3>
+                            <div class="grid-products" id="quick-products-grid"></div>
+                        </div>
+                    </div>
+                    <div class="pos-right">
+                        <div class="ticket-panel card">
+                            <div class="ticket-header">
+                                <h2>Ticket #<span id="ticket-id">New</span></h2>
+                                <button class="btn-icon" onclick="clearTicket()"><i class="ph ph-trash"></i></button>
+                            </div>
+                            <div class="ticket-items" id="ticket-items-container">
+                                <div class="empty-ticket-msg">Ticket vacío</div>
+                            </div>
+                            <div class="ticket-footer">
+                                <div class="total-row">
+                                    <span>Total</span>
+                                    <span id="ticket-total">0.00 €</span>
+                                </div>
+                                <button class="btn btn-primary btn-lg full-width" onclick="finalizeSale()">
+                                    <i class="ph ph-check-circle"></i> Cobrar
+                                </button>
+                                <div class="payment-controls"
+                                    style="margin-top: 15px; display: flex; gap: 10px; align-items: center;">
+                                    <input type="number" id="pay-received" placeholder="Entregado €"
+                                        style="width: 50%; padding: 8px; border-radius: 4px; border: 1px solid var(--border); background: rgba(0,0,0,0.2); color:white">
+                                    <div style="font-size: 0.9rem; color: var(--text-muted)">Cambio: <span
+                                            id="pay-change" style="color:var(--success); font-weight:bold">0.00 €</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VISTA: HISTORIAL VENTAS -->
+            <section id="view-sales" class="view-section hidden">
+                <div class="card glass-panel">
+                    <div class="panel-header">
+                        <h2>Últimas Ventas</h2>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Fecha</th>
+                                <th>Total</th>
+                                <th>Items</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sales-history-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- VISTA: GASTOS -->
+            <section id="view-expenses" class="view-section hidden">
+                <div class="card glass-panel form-card">
+                    <h2>Registrar Nuevo Gasto</h2>
+                    <div class="inline-form">
+                        <input type="text" id="exp-desc" placeholder="Concepto (ej. Luz, Alquiler)">
+                        <input type="number" id="exp-amount" placeholder="Monto (€)">
+                        <select id="exp-cat">
+                            <option>General</option>
+                            <option>Proveedores</option>
+                            <option>Impuestos</option>
+                            <option>Servicios</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="addExpense()">Registrar</button>
+                    </div>
+                </div>
+
+                <div class="card glass-panel">
+                    <div class="panel-header">
+                        <h2>Historial de Gastos</h2>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Concepto</th>
+                                <th>Categoría</th>
+                                <th>Monto</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="expenses-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- VISTA: INVENTARIO (Simplificado aquí, lógica en JS) -->
+            <section id="view-inventory" class="view-section hidden">
+                <div class="card glass-panel">
+                    <div class="panel-header">
+                        <h2>Inventario</h2>
+                        <input type="text" id="inventory-search" placeholder="Buscar..." class="search-input">
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Cod</th>
+                                    <th>Producto</th>
+                                    <th>Stock</th>
+                                    <th>Costo</th>
+                                    <th>Venta</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventory-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VISTA: UPLOAD -->
+            <section id="view-upload" class="view-section hidden">
+                <div class="card glass-panel upload-hero">
+                    <h2><i class="ph ph-robot"></i> Importación con IA</h2>
+                    <p>Sube albaranes (JPG/PNG) o listados (CSV).</p>
+                    <div class="drop-zone" id="drop-zone">
+                        <i class="ph ph-file-image"></i>
+                        <input type="file" id="file-input" hidden>
+                    </div>
+                </div>
+                <!-- Resultados OCR tabla oculta -->
+                <div class="card hidden" id="ocr-results-panel">
+                    <div class="panel-header">
+                        <h2>Resultados</h2>
+                        <button class="btn btn-primary" id="save-all-btn">Confirmar</button>
+                    </div>
+                    <table class="data-table" id="ocr-table">
+                        <thead>
+                            <tr>
+                                <th>Cod</th>
+                                <th>Nom</th>
+                                <th>Cant</th>
+                                <th>Venta</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Modals & Toasts -->
+    <div id="toast" class="toast hidden"></div>
+    <div id="apikey-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <h3>API Key (Gemini)</h3>
+            <input type="text" id="api-key-input" placeholder="Pegar Key...">
+            <button class="btn btn-primary" onclick="saveApiKey()">Guardar</button>
+            <button class="btn btn-secondary" onclick="closeModal('apikey-modal')">Cerrar</button>
+        </div>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+
+</html>

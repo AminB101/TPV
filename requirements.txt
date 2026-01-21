@@ -1,0 +1,9 @@
+Flask==3.0.0
+Pillow
+pytesseract
+opencv-python-headless
+pandas
+numpy
+pywebview
+pyinstaller
+python-dotenv
