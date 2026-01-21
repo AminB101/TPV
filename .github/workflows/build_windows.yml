@@ -25,10 +25,10 @@ jobs:
 
     - name: Build with PyInstaller
       run: |
-        pyinstaller --noconfirm --onefile --windowed --add-data "templates;templates" --add-data "static;static" --icon "static/icon.png" --name "NexusERP" main.py
+        pyinstaller --noconfirm --onefile --windowed --add-data "templates;templates" --add-data "static;static" --icon "static/icon.png" --hidden-import "google" --hidden-import "google.generativeai" --name "NexusERP_Fixed" main.py
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: NexusERP-Windows-App
-        path: dist/NexusERP.exe
+        name: NexusERP-Windows-Fixed
+        path: dist/NexusERP_Fixed.exe
