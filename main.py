@@ -5,7 +5,7 @@ from app import app
 
 def start_flask():
     # Desactivar reloader para que no interfiera con hilos
-    app.run(port=5000, debug=False, use_reloader=False)
+    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
 
 if __name__ == '__main__':
     # Asegurar que el directorio de subidas existe en la ubicación correcta

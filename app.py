@@ -155,7 +155,20 @@ def upload_file():
     
     return jsonify({'error': 'File type not allowed'}), 400
 
+@app.route('/api/config/ip', methods=['GET'])
+def get_local_ip():
+    import socket
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+    except:
+        ip = "127.0.0.1"
+    return jsonify({'ip': ip})
+
 if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)
-    app.run(debug=True, port=5000)
+    # Escuchar en todas las interfaces para permitir acceso desde el móvil
+    app.run(host='0.0.0.0', debug=True, port=5000)

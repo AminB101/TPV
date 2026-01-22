@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="/static/style.css">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
 
 <body>
@@ -90,6 +91,22 @@
 
                 <div class="dashboard-split"
                     style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px;">
+                    <!-- Conexión Móvil -->
+                    <div class="card panel highlight-card">
+                        <div class="panel-header">
+                            <h3><i class="ph ph-device-mobile"></i> Asistente Móvil</h3>
+                        </div>
+                        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 10px;">Escanea este QR
+                            desde tu móvil para entrar al TPV:</p>
+                        <div id="connection-qr"
+                            style="background: white; padding: 10px; width: 150px; height: 150px; margin: 0 auto; border-radius: 8px;">
+                            <img src="" id="qr-img" style="width: 100%; height: 100%;">
+                        </div>
+                        <p id="local-url"
+                            style="text-align: center; margin-top: 10px; font-family: monospace; font-size: 0.8rem; color: var(--primary);">
+                        </p>
+                    </div>
+
                     <!-- Más Vendidos -->
                     <div class="card panel">
                         <div class="panel-header">
@@ -224,7 +241,11 @@
                 <div class="card glass-panel">
                     <div class="panel-header">
                         <h2>Inventario</h2>
-                        <input type="text" id="inventory-search" placeholder="Buscar..." class="search-input">
+                        <div style="display:flex; gap:10px">
+                            <button class="btn btn-primary" onclick="openManualAdd()"><i class="ph ph-plus"></i> Nuevo
+                                Producto</button>
+                            <input type="text" id="inventory-search" placeholder="Buscar..." class="search-input">
+                        </div>
                     </div>
                     <div class="table-container">
                         <table class="data-table">
@@ -285,6 +306,47 @@
             <input type="text" id="api-key-input" placeholder="Pegar Key...">
             <button class="btn btn-primary" onclick="saveApiKey()">Guardar</button>
             <button class="btn btn-secondary" onclick="closeModal('apikey-modal')">Cerrar</button>
+        </div>
+    </div>
+
+    <!-- QR Scanner Modal -->
+    <div id="scanner-modal" class="modal-overlay hidden">
+        <div class="modal-card" style="width: 90%; max-width: 500px;">
+            <h3>Escanear Código</h3>
+            <div id="reader" style="width: 100%; min-height: 300px;"></div>
+            <button class="btn btn-secondary full-width" onclick="closeModal('scanner-modal')">Cerrar</button>
+        </div>
+    </div>
+
+    <!-- Manual Add Product Modal -->
+    <div id="manual-add-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <h3>Nuevo Producto</h3>
+            <div class="form-group" style="margin-top: 15px;">
+                <label>Código / SKU</label>
+                <div style="display:flex; gap:5px">
+                    <input type="text" id="man-code" placeholder="Escanear o escribir...">
+                    <button class="btn btn-icon" onclick="startPhoneScanner()"><i class="ph ph-camera"></i></button>
+                </div>
+                <label>Nombre del Producto</label>
+                <input type="text" id="man-name" placeholder="Ej. Coca Cola 33cl">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px">
+                    <div>
+                        <label>Costo (€)</label>
+                        <input type="number" id="man-cost" step="0.01" placeholder="0.00">
+                    </div>
+                    <div>
+                        <label>Venta (€)</label>
+                        <input type="number" id="man-price" step="0.01" placeholder="0.00">
+                    </div>
+                </div>
+                <label>Stock Inicial</label>
+                <input type="number" id="man-stock" value="0">
+            </div>
+            <div style="margin-top: 20px; display: flex; gap: 10px;">
+                <button class="btn btn-primary full-width" onclick="saveManualProduct()">Guardar</button>
+                <button class="btn btn-secondary full-width" onclick="closeModal('manual-add-modal')">Cancelar</button>
+            </div>
         </div>
     </div>
 

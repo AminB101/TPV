@@ -20,7 +20,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const change = Math.max(0, received - total);
         document.getElementById('pay-change').innerText = change.toFixed(2) + ' €';
     });
+
+    // Detect IP for phone connection
+    setupMobileAssistant();
 });
+
+let html5QrCode = null;
 
 // --- NAVIGATION ---
 function showView(viewId) {
@@ -390,7 +395,13 @@ function loadInventory() {
             <tr>
                 <td style="font-family:monospace">${p.codigo}</td>
                 <td>${p.nombre}</td>
-                <td><span class="badge ${p.stock < 5 ? 'bg-red' : 'bg-gray'}">${p.stock}</span></td>
+                <td>
+                    <div style="display:flex; align-items:center; gap:8px">
+                        <button class="btn-icon" onclick="updateStock(${p.id}, -1)" style="font-size:0.8rem"><i class="ph ph-minus"></i></button>
+                        <span class="badge ${p.stock < 5 ? 'bg-red' : 'bg-gray'}">${p.stock}</span>
+                        <button class="btn-icon" onclick="updateStock(${p.id}, 1)" style="font-size:0.8rem"><i class="ph ph-plus"></i></button>
+                    </div>
+                </td>
                 <td>${p.costo.toFixed(2)}</td>
                 <td>${p.venta.toFixed(2)}</td>
                 <td><button class="btn-icon" onclick="deleteProduct(${p.id})"><i class="ph ph-trash"></i></button></td>
@@ -472,4 +483,133 @@ function showDetected(items) {
         document.getElementById('ocr-results-panel').classList.add('hidden');
         document.getElementById('view-upload').querySelector('.upload-hero').classList.remove('hidden');
     };
+}
+
+window.updateStock = async (id, delta) => {
+    const prods = await fetch('/api/productos').then(r => r.json());
+    const p = prods.find(x => x.id === id);
+    if (!p) return;
+    await fetch('/api/productos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            codigo: p.codigo,
+            nombre: p.nombre,
+            costo: p.costo,
+            venta: p.venta,
+            stock: delta
+        })
+    });
+    loadInventory();
+};
+
+document.getElementById('inventory-search')?.addEventListener('input', (e) => {
+    const term = e.target.value.toLowerCase();
+    fetch(`/api/productos?search=${encodeURIComponent(term)}`)
+        .then(r => r.json())
+        .then(prods => {
+            const tbody = document.getElementById('inventory-body');
+            tbody.innerHTML = prods.map(p => `
+                <tr>
+                    <td style="font-family:monospace">${p.codigo}</td>
+                    <td>${p.nombre}</td>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:8px">
+                            <button class="btn-icon" onclick="updateStock(${p.id}, -1)" style="font-size:0.8rem"><i class="ph ph-minus"></i></button>
+                            <span class="badge ${p.stock < 5 ? 'bg-red' : 'bg-gray'}">${p.stock}</span>
+                            <button class="btn-icon" onclick="updateStock(${p.id}, 1)" style="font-size:0.8rem"><i class="ph ph-plus"></i></button>
+                        </div>
+                    </td>
+                    <td>${p.costo.toFixed(2)}</td>
+                    <td>${p.venta.toFixed(2)}</td>
+                    <td><button class="btn-icon" onclick="deleteProduct(${p.id})"><i class="ph ph-trash"></i></button></td>
+                </tr>
+            `).join('');
+        });
+});
+
+// --- MOBILE & MANUAL ADD ---
+function setupMobileAssistant() {
+    fetch('/api/config/ip')
+        .then(r => r.json())
+        .then(data => {
+            const url = `http://${data.ip}:5000`;
+            document.getElementById('local-url').innerText = url;
+            // Generar QR usando una API gratuita (QRServer)
+            document.getElementById('qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(url)}`;
+        });
+}
+
+function openManualAdd() {
+    document.getElementById('manual-add-modal').classList.remove('hidden');
+}
+
+async function saveManualProduct() {
+    const p = {
+        codigo: document.getElementById('man-code').value,
+        nombre: document.getElementById('man-name').value,
+        costo: parseFloat(document.getElementById('man-cost').value) || 0,
+        venta: parseFloat(document.getElementById('man-price').value) || 0,
+        stock: parseInt(document.getElementById('man-stock').value) || 0
+    };
+
+    if (!p.codigo || !p.nombre) return showToast('Código y Nombre obligatorios', 'error');
+
+    const res = await fetch('/api/productos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(p)
+    });
+
+    if (res.ok) {
+        showToast('Producto guardado');
+        closeModal('manual-add-modal');
+        loadInventory();
+        // Limpiar
+        ['man-code', 'man-name', 'man-cost', 'man-price', 'man-stock'].forEach(id => document.getElementById(id).value = '');
+    } else {
+        showToast('Error al guardar', 'error');
+    }
+}
+
+function startPhoneScanner() {
+    document.getElementById('scanner-modal').classList.remove('hidden');
+    html5QrCode = new Html5Qrcode("reader");
+    html5QrCode.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        (decodedText) => {
+            document.getElementById('man-code').value = decodedText;
+            stopScanner();
+        },
+        () => { } // Ignorar errores de escaneo continuo
+    ).catch(err => {
+        console.error(err);
+        showToast("Error cámara: " + err, "error");
+    });
+}
+
+function stopScanner() {
+    if (html5QrCode) {
+        html5QrCode.stop().then(() => {
+            document.getElementById('scanner-modal').classList.add('hidden');
+        }).catch(() => {
+            document.getElementById('scanner-modal').classList.add('hidden');
+        });
+    } else {
+        document.getElementById('scanner-modal').classList.add('hidden');
+    }
+}
+
+// Sobrescribir closeModal para asegurar limpieza de cámara
+const originalCloseModal = window.closeModal;
+window.closeModal = (id) => {
+    if (id === 'scanner-modal') stopScanner();
+    originalCloseModal(id);
+};
+
+window.deleteProduct = (id) => {
+    if (confirm('¿Eliminar producto?')) {
+        fetch(`/api/productos/${id}`, { method: 'DELETE' }).then(loadInventory);
+    }
 }
