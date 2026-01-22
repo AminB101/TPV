@@ -3,9 +3,20 @@ import os
 import datetime
 import json
 
-DB_NAME = 'tpv.db'
+import sys
+
+# Determinar la ruta base para el archivo de base de datos
+if getattr(sys, 'frozen', False):
+    # Si es un ejecutable de PyInstaller, usar la carpeta donde está el .exe
+    BASE_DIR = os.path.dirname(sys.executable)
+else:
+    # Si es script normal, usar la carpeta actual
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+DB_NAME = os.path.join(BASE_DIR, 'tpv.db')
 
 def get_db_connection():
+    # Asegurar que el directorio base es escribible
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
     return conn

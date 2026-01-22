@@ -8,9 +8,10 @@ def start_flask():
     app.run(port=5000, debug=False, use_reloader=False)
 
 if __name__ == '__main__':
-    # Asegurar que el directorio de subidas existe
-    if not os.path.exists('uploads'):
-        os.makedirs('uploads')
+    # Asegurar que el directorio de subidas existe en la ubicación correcta
+    upload_dir = app.config['UPLOAD_FOLDER']
+    if not os.path.exists(upload_dir):
+        os.makedirs(upload_dir)
 
     # Iniciar Flask en un hilo separado
     t = threading.Thread(target=start_flask)

@@ -8,9 +8,20 @@ import database
 import ocr_service
 from werkzeug.utils import secure_filename
 
-app = Flask(__name__)
+import sys
+
+# Determinar si estamos ejecutando como un bundle de PyInstaller
+if getattr(sys, 'frozen', False):
+    template_folder = os.path.join(sys._MEIPASS, 'templates')
+    static_folder = os.path.join(sys._MEIPASS, 'static')
+    BASE_DIR = os.path.dirname(sys.executable)
+    app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    app = Flask(__name__)
+
 # Configuración
-UPLOAD_FOLDER = 'uploads'
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp', 'csv'}
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
